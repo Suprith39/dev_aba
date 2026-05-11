@@ -1,0 +1,55 @@
+---
+# Ansible deployment playbook for java-pipeline-app
+# Targets the [webservers] group defined in inventory/hosts.ini
+# Assumes Docker is already installed on the target server (Ubuntu 22.04).
+
+- name: Deploy java-pipeline-app container
+  hosts: webservers
+  become: true   # Run tasks with sudo where needed
+
+  vars:
+    # Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username.
+    docker_image: "YOUR_DOCKERHUB_USERNAME/java-pipeline-app:latest"
+    container_name: "java-pipeline-app"
+    host_port: 8080
+    container_port: 8080
+
+  tasks:
+
+    # ── Task 1: Pull the latest image from Docker Hub ──────────────────────
+    - name: Pull latest Docker image from Docker Hub
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+        force_source: true   # Always pull even if the tag already exists locally
+
+    # ── Task 2: Stop and remove any existing container ─────────────────────
+    # state: absent is idempotent — no error if the container doesn't exist
+    - name: Remove existing container (if any)
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: true
+
+    # ── Task 3: Start the new container ────────────────────────────────────
+    - name: Start new container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ docker_image }}"
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "{{ host_port }}:{{ container_port }}"
+
+    # ── Task 4: Verify the container is running ─────────────────────────────
+    - name: Gather container info
+      community.docker.docker_container_info:
+        name: "{{ container_name }}"
+      register: container_info
+
+    - name: Assert container is in running state
+      ansible.builtin.assert:
+        that:
+          - container_info.container.State.Running == true
+        fail_msg: "Container {{ container_name }} failed to start!"
+        success_msg: "Container {{ container_name }} is running successfully."
