@@ -22,24 +22,20 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven   # Cache ~/.m2 to speed up subsequent runs
+          cache: maven
 
       - name: Build and test with Maven
         run: mvn clean package -B
-        # -B = batch mode (no interactive prompts, cleaner CI output)
-        # Tests run automatically; a failure here stops the pipeline.
 
       # ── Step 3: Build Docker image and push to Docker Hub ─────────────────
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          # Credentials stored as GitHub Secrets — never hard-coded
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         run: |
-          # Tag with both 'latest' and the commit SHA for traceability
           IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/java-pipeline-app
           docker build -t $IMAGE:latest -t $IMAGE:${{ github.sha }} .
           docker push $IMAGE:latest
@@ -55,7 +51,6 @@ jobs:
       - name: Configure SSH key
         run: |
           mkdir -p ~/.ssh
-          # Write the private key from GitHub Secrets to a file
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
@@ -65,5 +60,3 @@ jobs:
             -i ansible/inventory/hosts.ini \
             --extra-vars "docker_image=${{ secrets.DOCKERHUB_USERNAME }}/java-pipeline-app:latest" \
             --extra-vars "ansible_host=${{ secrets.TARGET_SERVER_IP }}"
-        # TARGET_SERVER_IP overrides the placeholder in hosts.ini at runtime
-        # so you don't need to commit the real IP to the repository.
