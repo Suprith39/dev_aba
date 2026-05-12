@@ -41,22 +41,22 @@ jobs:
           docker push $IMAGE:latest
           docker push $IMAGE:${{ github.sha }}
 
-      # ── Step 4: Deploy via Ansible ─────────────────────────────────────────
-      - name: Install Ansible
-        run: pip install ansible
+      # ── Step 4: Deploy via Ansible (disabled until SSH_PRIVATE_KEY and TARGET_SERVER_IP secrets are configured) ──
+      # - name: Install Ansible
+      #   run: pip install ansible
 
-      - name: Install Ansible Docker collection
-        run: ansible-galaxy collection install community.docker
+      # - name: Install Ansible Docker collection
+      #   run: ansible-galaxy collection install community.docker
 
-      - name: Configure SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+      # - name: Configure SSH key
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+      #     chmod 600 ~/.ssh/id_rsa
 
-      - name: Run Ansible deployment playbook
-        run: |
-          ansible-playbook ansible/deploy.yml \
-            -i ansible/inventory/hosts.ini \
-            --extra-vars "docker_image=${{ secrets.DOCKERHUB_USERNAME }}/java-pipeline-app:latest" \
-            --extra-vars "ansible_host=${{ secrets.TARGET_SERVER_IP }}"
+      # - name: Run Ansible deployment playbook
+      #   run: |
+      #     ansible-playbook ansible/deploy.yml \
+      #       -i ansible/inventory/hosts.ini \
+      #       --extra-vars "docker_image=${{ secrets.DOCKERHUB_USERNAME }}/java-pipeline-app:latest" \
+      #       --extra-vars "ansible_host=${{ secrets.TARGET_SERVER_IP }}"
